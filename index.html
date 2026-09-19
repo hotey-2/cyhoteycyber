@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Malware Analysis & Exploit Intelligence Lab</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+    body { background-color: #f1f5f9; color: #0f172a; padding: 20px; line-height: 1.5; }
+    
+    header { text-align: center; border-bottom: 2px solid #cbd5e1; padding-bottom: 14px; margin-bottom: 20px; }
+    header h1 { font-size: 20px; letter-spacing: 1px; text-transform: uppercase; font-family: 'Courier New', monospace; font-weight: 800; }
+    header p { font-size: 12px; color: #475569; margin-top: 4px; font-family: 'Courier New', monospace; }
+
+    .nav-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn { padding: 8px 14px; background: #ffffff; border: 1px solid #000; color: #000; cursor: pointer; font-weight: bold; font-size: 11px; font-family: 'Courier New', monospace; }
+    .tab-btn.active { background: #000000; color: #ffffff; }
+
+    .module-card { max-width: 950px; margin: 0 auto; border: 1px solid #94a3b8; padding: 20px; display: none; background: #ffffff; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .module-card.active { display: block; }
+    .module-card h2 { font-size: 15px; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px dashed #94a3b8; padding-bottom: 6px; font-family: 'Courier New', monospace; }
+    .desc { font-size: 12px; color: #334155; margin-bottom: 16px; }
+
+    /* --- VIRTUAL WINDOWS MONITOR CANVAS --- */
+    .win-monitor {
+      width: 100%;
+      height: 380px;
+      border: 3px solid #1e293b;
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      background-color: #0284c7;
+      background-image: url('1.jpeg');
+      background-size: cover;
+      background-position: center;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+      margin-bottom: 16px;
+    }
+
+    .desktop-icons {
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 120px;
+    }
+
+    .win-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      text-align: center;
+      padding: 6px 4px;
+      border-radius: 4px;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    .win-icon:hover { background: rgba(255, 255, 255, 0.25); }
+    .win-icon .ico { font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+    .win-icon .ico-label { font-size: 11px; color: #ffffff; text-shadow: 1px 1px 3px #000; margin-top: 4px; font-weight: 600; }
+
+    /* Taskbar */
+    .win-taskbar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 38px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      color: #fff;
+      font-size: 11px;
+      z-index: 5;
+      border-top: 1px solid rgba(255,255,255,0.15);
+    }
+    .taskbar-start { display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; }
+
+    /* Generic Window Popup */
+    .win-window {
+      position: absolute;
+      top: 30px;
+      left: 70px;
+      right: 70px;
+      bottom: 55px;
+      background: #ffffff;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: none;
+      flex-direction: column;
+      z-index: 10;
+      animation: popIn 0.2s ease-out;
+    }
+    @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .win-window-header {
+      background: #f1f5f9;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #cbd5e1;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .win-close-btn { background: #ef4444; color: #fff; border: none; width: 18px; height: 18px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: bold; }
+
+    .win-window-body { flex: 1; padding: 12px; overflow-y: auto; font-size: 12px; }
+
+    /* Notification Toasts */
+    .win-toast {
+      position: absolute;
+      bottom: 46px;
+      right: 12px;
+      width: 270px;
+      background: rgba(15, 23, 42, 0.95);
+      color: #fff;
+      border-left: 4px solid #38bdf8;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 11px;
+      display: none;
+      z-index: 20;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .win-toast.danger { border-left-color: #ef4444; }
+
+    /* --- BUFFER OVERFLOW CONTROLS (TAB 1) --- */
+    .memory-row { display: flex; gap: 16px; margin: 15px 0; }
+    .mem-block { flex: 1; border: 1px solid #000; padding: 10px; font-family: monospace; }
+    .block-title { font-size: 11px; color: #555; display: block; margin-bottom: 6px; text-transform: uppercase; }
+    .cells { display: flex; gap: 4px; }
+    .cell { flex: 1; height: 34px; border: 1px solid #777; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+    .cell.filled { background: #e2e8f0; border-color: #000; }
+    .cell.corrupted { background: #000000; color: #ffffff; }
+    input[type="text"] { padding: 8px; background: #fff; border: 1px solid #000; font-family: monospace; font-size: 12px; width: 100%; }
+    .status-box { padding: 10px; font-size: 12px; border: 1px solid #000; margin-top: 10px; font-family: monospace; }
+    .status-safe { background: #f8fafc; color: #000; }
+    .status-danger { background: #000; color: #fff; font-weight: bold; }
+
+    /* --- TAB 4 STYLES (INTACT) --- */
+    .lookup-container { border: 2px solid #000; padding: 14px; background: #fafafa; margin-bottom: 15px; font-family: monospace; }
+    .cve-bar { display: flex; gap: 10px; margin-bottom: 10px; }
+    .cve-bar input { flex: 3; padding: 8px; border: 1px solid #000; font-family: monospace; }
+    .cve-bar button { flex: 1; padding: 8px; background: #000; color: #fff; border: 1px solid #000; cursor: pointer; font-weight: bold; }
+    .quick-tags { font-size: 11px; color: #555; margin-bottom: 8px; font-family: monospace; }
+    .quick-tags span { cursor: pointer; text-decoration: underline; margin-right: 8px; }
+    .cve-table-wrapper { max-height: 240px; overflow-y: scroll; border: 1px solid #000; margin-bottom: 15px; font-family: monospace; }
+    table.cve-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+    table.cve-table th, table.cve-table td { border: 1px solid #000; padding: 6px 8px; }
+    table.cve-table th { background: #000; color: #fff; position: sticky; top: 0; z-index: 2; }
+    table.cve-table tbody tr:hover { background: #000; color: #fff; cursor: pointer; }
+    .dual-panel { display: flex; gap: 12px; margin-top: 10px; font-family: monospace; }
+    .cve-inspect, .yara-panel { flex: 1; border: 2px solid #000; padding: 12px; background: #ffffff; font-size: 11px; }
+    .yara-panel pre { background: #000; color: #00ff66; padding: 8px; font-size: 11px; overflow-x: auto; margin-top: 6px; }
+    .match-highlight { font-weight: bold; background: #eee; padding: 2px 4px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>MALWARE TYPES & EXPLOIT ANALYSIS LAB</h1>
+    <p>[ INTERACTIVE WINDOWS RUNTIME SANDBOX & THREAT INTEL ]</p>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="showTab('worm-tab', this)">1. WORM (MEMORY OVERFLOW & CRASH)</button>
+    <button class="tab-btn" onclick="showTab('ransom-tab', this)">2. RANSOMWARE (DRIVE LOCK SCREEN)</button>
+    <button class="tab-btn" onclick="showTab('trojan-tab', this)">3. TROJAN (FAKE DOWNLOADS & DEFENDER)</button>
+    <button class="tab-btn" onclick="showTab('cve-tab', this)">4. THREAT INTEL & YARA DEFENSE</button>
+  </div>
+
+  <!-- ==================== TAB 1: WORM (STACK OVERFLOW) ==================== -->
+  <div id="worm-tab" class="module-card active">
+    <h2>Vector 1: Memory Corruption / Stack Overflow (Worm Vector)</h2>
+    <p class="desc">The virtual Windows monitor below displays active network daemons. Injecting payload exceeding 8 bytes causes memory collision, instantly crashing the Windows daemon session on screen.</p>
+
+    <!-- Monitor -->
+    <div class="win-monitor" id="worm-monitor">
+      <div class="desktop-icons">
+        <div class="win-icon" onclick="openWormDaemon()">
+          <span class="ico">🌐</span>
+          <span class="ico-label">Network_Daemon</span>
+        </div>
+      </div>
+
+      <!-- Windows Crash Window -->
+      <div class="win-window" id="worm-crash-win" style="max-width: 400px; height: 180px; margin: 40px auto; position: relative; top: auto; left: auto;">
+        <div class="win-window-header">
+          <span>⚠️ svchost.exe - System Error</span>
+          <button class="win-close-btn" onclick="document.getElementById('worm-crash-win').style.display='none'">×</button>
+        </div>
+        <div class="win-window-body" style="background:#fff; color:#000;">
+          <p style="font-weight: bold; margin-bottom: 6px; color:#b91c1c;">Exception Processing Message 0xc0000005</p>
+          <p style="font-size: 11px;">The instruction at 0x41414141 referenced memory at 0x41414141. The memory could not be read. Buffer overflow compromised EIP register.</p>
+        </div>
+      </div>
+
+      <!-- Live Toast -->
+      <div class="win-toast danger" id="worm-toast">
+        <strong>⚠️ Windows Security Notification</strong><br>
+        Critical memory corruption in RPC service. Daemon terminated.
+      </div>
+
+      <div class="win-taskbar">
+        <div class="taskbar-start">🪟 Start</div>
+        <span>Network Port: 445 (SMB) Active</span>
+      </div>
+    </div>
+
+    <!-- Memory Buffer Controls -->
+    <label style="font-size: 11px; text-transform: uppercase; font-family: monospace; font-weight: bold;">Inject Network Stream (Max 16 Chars):</label>
+    <input type="text" id="payload-input" maxlength="16" placeholder="Type AAAAAAAA (8-byte safe) or AAAAAAAAAAAA (Overflow)" oninput="runOverflowSimulation()">
+
+    <div class="memory-row">
+      <div class="mem-block">
+        <span class="block-title">Buffer Space [8 Bytes]</span>
+        <div class="cells" id="buf-cells"></div>
+      </div>
+      <div class="mem-block">
+        <span class="block-title">Return Address (EIP) [4 Bytes]</span>
+        <div class="cells" id="eip-cells"></div>
+      </div>
+    </div>
+    <div id="overflow-status" class="status-box status-safe">
+      [STATUS]: MEMORY SAFE (Payload within 8-byte boundary)
+    </div>
+  </div>
+
+  <!-- ==================== TAB 2: RANSOMWARE ==================== -->
+  <div id="ransom-tab" class="module-card">
+    <h2>Vector 2: Ransomware Drive Encryption Simulation</h2>
+    <p class="desc">Interact with the Windows desktop. Double-click <strong>This PC</strong> to inspect storage drives. The encrypted malware routine will lock the volumes and surface the extortion demand.</p>
+
+    <!-- Monitor -->
+    <div class="win-monitor">
+      <div class="desktop-icons">
+        <div class="win-icon" onclick="openThisPC()">
+          <span class="ico" id="ransom-pc-icon">💻</span>
+          <span class="ico-label">This PC</span>
+        </div>
+        <div class="win-icon" onclick="alert('System documents locked by system filter.')">
+          <span class="ico">📁</span>
+          <span class="ico-label">Documents</span>
+        </div>
+      </div>
+
+      <!-- File Explorer Window -->
+      <div class="win-window" id="this-pc-win">
+        <div class="win-window-header">
+          <span>This PC - File Explorer</span>
+          <button class="win-close-btn" onclick="document.getElementById('this-pc-win').style.display='none'">×</button>
+        </div>
+        <div class="win-window-body">
+          <p style="font-size: 11px; margin-bottom: 10px; color:#475569;">Devices and Drives (1)</p>
+          <div style="display: flex; gap: 15px; align-items: center; border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; cursor: pointer;" onclick="triggerRansomLock()">
+            <span style="font-size: 28px;" id="c-drive-icon">💾</span>
+            <div>
+              <strong id="c-drive-label">Local Disk (C:)</strong>
+              <div style="width: 140px; height: 10px; background: #e2e8f0; border-radius: 2px; margin-top: 4px;">
+                <div id="c-drive-bar" style="width: 70%; height: 100%; background: #0284c7;"></div>
+              </div>
+            </div>
+          </div>
+          <p style="font-size: 10px; color:#64748b; margin-top: 10px;">Click Local Disk (C:) to access filesystem.</p>
+        </div>
+      </div>
+
+      <!-- Ransom Notice Window -->
+      <div class="win-window" id="ransom-popup-win" style="background:#000; color:#fff; border-color:#ef4444; z-index: 30;">
+        <div class="win-window-header" style="background:#7f1d1d; color:#fff; border-bottom: 1px solid #ef4444;">
+          <span>🚨 WINDOWS CRITICAL ALERT: SYSTEM COMPROMISED</span>
+          <button class="win-close-btn" onclick="resetRansomState()">×</button>
+        </div>
+        <div class="win-window-body" style="text-align: center; padding: 20px;">
+          <h3 style="color:#ef4444; font-size: 16px; margin-bottom: 8px;">ALL SYSTEM FILES ENCRYPTED WITH RSA-4096</h3>
+          <p style="font-size: 11px; margin-bottom: 12px; color:#cbd5e1;">Your private keys are secured on our command server. Windows cannot mount files.</p>
+          <div style="border: 1px dashed #ef4444; padding: 10px; margin-bottom: 14px; font-family: monospace; font-size: 12px; background: #1e1e1e;">
+            DEMAND: 0.50 BITCOIN<br>
+            WALLET: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+          </div>
+          <button style="padding: 6px 14px; background:#fff; color:#000; border:none; cursor:pointer; font-weight:bold; font-size:11px;" onclick="resetRansomState()">[ REMEDIATE & DECRYPT ]</button>
+        </div>
+      </div>
+
+      <div class="win-taskbar">
+        <div class="taskbar-start">🪟 Start</div>
+        <span id="ransom-taskbar-status">Windows Defender: Normal</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 3: TROJAN ==================== -->
+  <div id="trojan-tab" class="module-card">
+    <h2>Vector 3: Trojan Dropper & Windows Defender Detection</h2>
+    <p class="desc">Open the <strong>Downloads</strong> folder on the Windows desktop, install an untrusted payload utility, and observe how the Windows runtime defense quarantines the malicious backdoor.</p>
+
+    <!-- Monitor -->
+    <div class="win-monitor">
+      <div class="desktop-icons">
+        <div class="win-icon" onclick="openDownloadsWin()">
+          <span class="ico">📥</span>
+          <span class="ico-label">Downloads</span>
+        </div>
+        <div class="win-icon" onclick="openDownloadsWin()">
+          <span class="ico">🌐</span>
+          <span class="ico-label">Edge_Browser</span>
+        </div>
+      </div>
+
+      <!-- Downloads Folder Window -->
+      <div class="win-window" id="downloads-win">
+        <div class="win-window-header">
+          <span>File Explorer - Downloads Folder</span>
+          <button class="win-close-btn" onclick="document.getElementById('downloads-win').style.display='none'">×</button>
+        </div>
+        <div class="win-window-body">
+          <p style="font-size: 11px; margin-bottom: 10px; color:#475569;">Unverified downloaded executables:</p>
+          
+          <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+            <div style="flex:1; border: 1px solid #cbd5e1; padding: 10px; text-align: center; border-radius: 4px;">
+              <span style="font-size: 24px;">⚡</span><br>
+              <strong style="font-size: 11px;">SpeedBooster_v2.exe</strong><br>
+              <button style="margin-top: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer;" onclick="runTrojanInstaller('SpeedBooster_v2.exe')">Run Setup</button>
+            </div>
+
+            <div style="flex:1; border: 1px solid #cbd5e1; padding: 10px; text-align: center; border-radius: 4px;">
+              <span style="font-size: 24px;">🎮</span><br>
+              <strong style="font-size: 11px;">GameCrack_Patch.exe</strong><br>
+              <button style="margin-top: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer;" onclick="runTrojanInstaller('GameCrack_Patch.exe')">Run Setup</button>
+            </div>
+          </div>
+
+          <!-- Installer Progress Box -->
+          <div id="trojan-install-box" style="display: none; border-top: 1px solid #cbd5e1; padding-top: 10px;">
+            <span id="trojan-install-status" style="font-size: 11px; font-weight: bold;">Installing package...</span>
+            <div style="width: 100%; height: 14px; background: #e2e8f0; border-radius: 3px; margin-top: 6px; overflow: hidden;">
+              <div id="trojan-progress-bar" style="width: 0%; height: 100%; background: #0284c7; transition: width 0.3s;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Defender Alert Toast -->
+      <div class="win-toast danger" id="trojan-toast">
+        <strong>🛡️ Windows Defender Antivirus</strong><br>
+        <span id="defender-msg">Threat detected: Trojan:Win32/Backdoor.B!quarantine</span>
+      </div>
+
+      <div class="win-taskbar">
+        <div class="taskbar-start">🪟 Start</div>
+        <span id="trojan-port-status">Network Status: Port 4444 Closed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 4: THREAT INTEL & YARA (UNTOUCHED) ==================== -->
+  <div id="cve-tab" class="module-card">
+    <h2>Vector 4: Threat Intelligence, Patch Matrix & YARA Generator</h2>
+    <p class="desc">Dynamic database fed via asynchronous JSON stream. Select any threat to inspect MITRE ATT&CK mappings, recommended remediation patches, and exportable YARA detection rules.</p>
+
+    <div class="lookup-container">
+      <label style="font-size: 11px; font-weight: bold; text-transform: uppercase;">Search Threat Intelligence Feed:</label>
+      <div class="cve-bar" style="margin-top: 6px;">
+        <input type="text" id="cve-search" placeholder="Type Akira, WannaCry, Stuxnet, CVE ID, or Mitigation..." oninput="executeLookup()">
+        <button class="action-btn" onclick="executeLookup()">[ EXTRACT INTEL ]</button>
+      </div>
+      <div class="quick-tags">
+        Target Fast-Filters: 
+        <span onclick="setSearch('Akira')"><strong>Akira Ransomware</strong></span>
+        <span onclick="setSearch('WannaCry')">WannaCry</span>
+        <span onclick="setSearch('Stuxnet')">Stuxnet</span>
+        <span onclick="setSearch('XZ Utils')">XZ Utils</span>
+        <span onclick="setSearch('Log4Shell')">Log4Shell</span>
+      </div>
+    </div>
+
+    <div class="dual-panel">
+      <!-- Detailed Threat & Defense Profile -->
+      <div class="cve-inspect" id="cve-inspect">
+        <strong>[THREAT DOSSIER]</strong>: Select an entry from the database below to generate mitigation and vulnerability telemetry.
+      </div>
+      <!-- Auto-Generated YARA Detection Rule -->
+      <div class="yara-panel" id="yara-panel">
+        <strong>[DEFENSIVE YARA DETECTION SIGNATURE]</strong>:
+        <pre id="yara-code">// Awaiting threat selection...</pre>
+      </div>
+    </div>
+
+    <h3 style="font-size: 11px; text-transform: uppercase; margin: 15px 0 6px 0; font-family: monospace;">Live Matched CVE Index (<span id="match-count">0</span> feeds loaded via API stream):</h3>
+    <div class="cve-table-wrapper">
+      <table class="cve-table">
+        <thead>
+          <tr>
+            <th style="width: 25%;">Target Threat</th>
+            <th style="width: 20%;">CVE Identifier</th>
+            <th style="width: 20%;">MITRE ATT&CK</th>
+            <th style="width: 10%;">CVSS</th>
+            <th style="width: 25%;">Remediation Patch</th>
+          </tr>
+        </thead>
+        <tbody id="cve-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function showTab(tabId, btn) {
+      document.querySelectorAll('.module-card').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    // ================= TAB 1: WORM & BUFFER OVERFLOW =================
+    const BUF_SIZE = 8, EIP_SIZE = 4;
+    function initMemory() {
+      const bCont = document.getElementById('buf-cells');
+      const eCont = document.getElementById('eip-cells');
+      bCont.innerHTML = ''; eCont.innerHTML = '';
+      for (let i = 0; i < BUF_SIZE; i++) bCont.innerHTML += `<div class="cell" id="b-${i}">0x00</div>`;
+      for (let i = 0; i < EIP_SIZE; i++) eCont.innerHTML += `<div class="cell" id="e-${i}">0xFF</div>`;
+    }
+
+    function openWormDaemon() {
+      alert("Network Daemon listening on TCP/445. Type input below to test memory bounds.");
+    }
+
+    function runOverflowSimulation() {
+      const val = document.getElementById('payload-input').value;
+      const status = document.getElementById('overflow-status');
+      const crashWin = document.getElementById('worm-crash-win');
+      const toast = document.getElementById('worm-toast');
+
+      for (let i = 0; i < BUF_SIZE; i++) {
+        const el = document.getElementById(`b-${i}`);
+        if (i < val.length) { el.innerText = val[i]; el.className = 'cell filled'; }
+        else { el.innerText = '0x00'; el.className = 'cell'; }
+      }
+
+      let overflow = val.length - BUF_SIZE;
+      for (let i = 0; i < EIP_SIZE; i++) {
+        const el = document.getElementById(`e-${i}`);
+        if (i < overflow) { el.innerText = val[BUF_SIZE + i]; el.className = 'cell corrupted'; }
+        else { el.innerText = '0xFF'; el.className = 'cell'; }
+      }
+
+      if (overflow > 0) {
+        status.className = 'status-box status-danger';
+        status.innerText = `[ALERT]: BUFFER OVERFLOW! EIP overwritten by ${overflow} byte(s). Instruction pointer hijacked!`;
+        crashWin.style.display = 'flex';
+        toast.style.display = 'block';
+      } else {
+        status.className = 'status-box status-safe';
+        status.innerText = '[STATUS]: MEMORY SAFE (Payload within 8-byte boundary)';
+        crashWin.style.display = 'none';
+        toast.style.display = 'none';
+      }
+    }
+
+    // ================= TAB 2: RANSOMWARE FLOW =================
+    function openThisPC() {
+      document.getElementById('this-pc-win').style.display = 'flex';
+    }
+
+    function triggerRansomLock() {
+      document.getElementById('c-drive-icon').innerText = '🔒';
+      document.getElementById('c-drive-label').innerText = 'Local Disk (C:) - [ENCRYPTED]';
+      document.getElementById('c-drive-bar').style.background = '#ef4444';
+      document.getElementById('ransom-pc-icon').innerText = '🔒';
+      document.getElementById('ransom-popup-win').style.display = 'flex';
+      document.getElementById('ransom-taskbar-status').innerText = 'CRITICAL: Volumes Locked!';
+    }
+
+    function resetRansomState() {
+      document.getElementById('ransom-popup-win').style.display = 'none';
+      document.getElementById('this-pc-win').style.display = 'none';
+      document.getElementById('c-drive-icon').innerText = '💾';
+      document.getElementById('c-drive-label').innerText = 'Local Disk (C:)';
+      document.getElementById('c-drive-bar').style.background = '#0284c7';
+      document.getElementById('ransom-pc-icon').innerText = '💻';
+      document.getElementById('ransom-taskbar-status').innerText = 'Windows Defender: Normal';
+    }
+
+    // ================= TAB 3: TROJAN FLOW =================
+    function openDownloadsWin() {
+      document.getElementById('downloads-win').style.display = 'flex';
+    }
+
+    function runTrojanInstaller(name) {
+      const box = document.getElementById('trojan-install-box');
+      const bar = document.getElementById('trojan-progress-bar');
+      const label = document.getElementById('trojan-install-status');
+      const toast = document.getElementById('trojan-toast');
+      const port = document.getElementById('trojan-port-status');
+
+      box.style.display = 'block';
+      toast.style.display = 'none';
+      bar.style.width = '0%';
+      label.innerText = `Executing installer for ${name}...`;
+
+      let progress = 0;
+      const timer = setInterval(() => {
+        progress += 25;
+        bar.style.width = progress + '%';
+        if (progress >= 100) {
+          clearInterval(timer);
+          label.innerText = `Extraction complete. Initializing background service...`;
+          port.innerText = `Network Status: PORT 4444 (Trojan Listener OPEN)`;
+          
+          setTimeout(() => {
+            toast.style.display = 'block';
+            document.getElementById('defender-msg').innerText = `Threat Blocked: Trojan.Generic in ${name}. Port 4444 quarantined.`;
+          }, 800);
+        }
+      }, 300);
+    }
+
+    // ================= TAB 4: THREAT INTEL & YARA (UNTOUCHED) =================
+    let THREAT_INTEL_STORE = [];
+
+    const FALLBACK_DATA = [
+      {
+        malware: "Akira Ransomware",
+        cve: "CVE-2023-20269",
+        type: "Ransomware",
+        cvss: "9.1",
+        year: "2023",
+        mitre: "T1190 - Exploit Public-Facing App",
+        patch: "Upgrade Cisco ASA/FTD software to fixed release; enforce MFA.",
+        desc: "Unauthorized access and brute-force vulnerability in Cisco ASA and FTD SSL-VPN.",
+        yara: "rule Akira_Cisco_Ransomware {\n  strings:\n    $s1 = \"akira\"\n    $s2 = \".akira\"\n  condition:\n    any of them\n}"
+      },
+      {
+        malware: "Akira (SonicWall)",
+        cve: "CVE-2024-40766",
+        type: "Ransomware",
+        cvss: "9.3",
+        year: "2024",
+        mitre: "T1133 - External Remote Services",
+        patch: "Apply SonicOS 7.0.1-5035 / 7.1.1-7040 firmware updates immediately.",
+        desc: "Improper access control flaw in SonicWall SonicOS management interface & SSL-VPN.",
+        yara: "rule Akira_SonicWall_Exploit {\n  strings:\n    $uri = \"/cgi-bin/sonicwall.cgi\"\n  condition:\n    $uri\n}"
+      },
+      {
+        malware: "WannaCry",
+        cve: "CVE-2017-0144",
+        type: "Ransomware / Worm",
+        cvss: "9.8",
+        year: "2017",
+        mitre: "T1210 - Exploitation of Remote Services",
+        patch: "Install MS17-010; block TCP port 445 on external perimeter.",
+        desc: "EternalBlue SMBv1 remote code execution exploit developed by NSA.",
+        yara: "rule WannaCry_EternalBlue {\n  strings:\n    $ms17 = \"SMB_COM_TRANSACTION2\"\n  condition:\n    $ms17\n}"
+      },
+      {
+        malware: "Stuxnet",
+        cve: "CVE-2010-2568",
+        type: "Rootkit / APT",
+        cvss: "9.3",
+        year: "2010",
+        mitre: "T1091 - Removable Media",
+        patch: "Deploy Microsoft patch KB2286198; disable auto .LNK parsing.",
+        desc: "Windows Shell parsing flaw handling .LNK shortcut icons from USB drives.",
+        yara: "rule Stuxnet_LNK_Exploit {\n  strings:\n    $magic = { 4C 00 00 00 01 14 02 00 }\n  condition:\n$magic at 0\n}"
+      },
+      {
+        malware: "XZ Utils Backdoor",
+        cve: "CVE-2024-3094",
+        type: "Rootkit / Supply Chain",
+        cvss: "10.0",
+        year: "2024",
+        mitre: "T1195 - Supply Chain Compromise",
+        patch: "Downgrade xz-utils to version 5.6.0 or lower.",
+        desc: "Supply chain backdoor in liblzma modifying OpenSSH authentication.",
+        yara: "rule XZ_Backdoor_Payload {\n  strings:\n    $sig = \"_get_cpuid\"\n  condition:\n    $sig\n}"
+      }
+    ];
+
+    async function loadThreatIntelData() {
+      try {
+        const res = await fetch('cve_intel.json');
+        if (!res.ok) throw new Error("HTTP Fetch Failed");
+        THREAT_INTEL_STORE = await res.json();
+      } catch (err) {
+        THREAT_INTEL_STORE = FALLBACK_DATA;
+      }
+      renderCVETable(THREAT_INTEL_STORE);
+      if (THREAT_INTEL_STORE.length > 0) extractThreatProfile(THREAT_INTEL_STORE[0]);
+    }
+
+    function renderCVETable(data) {
+      const tbody = document.getElementById('cve-body');
+      const count = document.getElementById('match-count');
+      tbody.innerHTML = '';
+      count.innerText = data.length;
+
+      data.forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.onclick = () => extractThreatProfile(item);
+        tr.innerHTML = `
+          <td><strong>${item.malware}</strong></td>
+          <td><span class="match-highlight">${item.cve}</span></td>
+          <td>${item.mitre || "T1210 - Remote Exploit"}</td>
+          <td><strong>${item.cvss}</strong></td>
+          <td>${item.patch}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function executeLookup() {
+      const query = document.getElementById('cve-search').value.toLowerCase().trim();
+      const filtered = THREAT_INTEL_STORE.filter(item => 
+        item.malware.toLowerCase().includes(query) ||
+        item.cve.toLowerCase().includes(query) ||
+        item.patch.toLowerCase().includes(query) ||
+        item.desc.toLowerCase().includes(query)
+      );
+
+      renderCVETable(filtered);
+      if (filtered.length > 0) {
+        extractThreatProfile(filtered[0]);
+      } else {
+        document.getElementById('cve-inspect').innerHTML = `<strong style="color:#777;">[NO THREAT RECORD MATCHED]</strong>: No advisory mapped for "${query}".`;
+        document.getElementById('yara-code').innerText = "// No active signature available.";
+      }
+    }
+
+    function setSearch(name) {
+      document.getElementById('cve-search').value = name;
+      executeLookup();
+    }
+
+    function extractThreatProfile(item) {
+      const inspect = document.getElementById('cve-inspect');
+      const yaraBox = document.getElementById('yara-code');
+
+      inspect.innerHTML = `
+        <strong>[SECURITY ADVISORY]: ${item.malware}</strong><br>
+        • Vulnerability ID: <strong>${item.cve}</strong> | Severity: <strong>CVSS ${item.cvss}/10.0</strong><br>
+        • MITRE ATT&CK: <strong>${item.mitre || "T1190 - Initial Access"}</strong><br>
+        • Exploit Vector: ${item.desc}<br>
+        • <span style="text-decoration: underline;">Blue-Team Remediation</span>: <strong>${item.patch}</strong>
+      `;
+
+      yaraBox.innerText = item.yara || `rule Generic_${item.cve.replace(/-/g, '_')} {\n  meta:\n    threat = "${item.malware}"\n  strings:\n    $s1 = "malicious_string"\n  condition:\n    any of them\n}`;
+    }
+
+    window.onload = () => {
+      initMemory();
+      loadThreatIntelData();
+    };
+  </script>
+</body>
+</html>

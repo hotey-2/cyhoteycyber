@@ -1,0 +1,79 @@
+[
+  {
+    "malware": "Akira Ransomware",
+    "cve": "CVE-2023-20269",
+    "type": "Ransomware",
+    "cvss": "9.1",
+    "year": "2023",
+    "mitre": "T1190 - Exploit Public-Facing App",
+    "patch": "Upgrade Cisco ASA/FTD software to fixed release; enforce multi-factor authentication (MFA).",
+    "desc": "Unauthorized access and brute-force vulnerability in Cisco Adaptive Security Appliance (ASA) and Firepower Threat Defense (FTD) SSL-VPN used by Akira for perimeter breach.",
+    "yara": "rule Akira_Cisco_Ransomware {\n  strings:\n    $s1 = \"akira\"\n    $s2 = \".akira\"\n    $s3 = \"powerrun.exe\"\n  condition:\n    any of them\n}"
+  },
+  {
+    "malware": "Akira (SonicWall)",
+    "cve": "CVE-2024-40766",
+    "type": "Ransomware",
+    "cvss": "9.3",
+    "year": "2024",
+    "mitre": "T1133 - External Remote Services",
+    "patch": "Apply SonicOS 7.0.1-5035 / 7.1.1-7040 firmware updates immediately; isolate SSL-VPN interfaces.",
+    "desc": "Improper access control flaw in SonicWall SonicOS management interface & SSL-VPN leveraged by Akira operators to deploy ransomware binaries.",
+    "yara": "rule Akira_SonicWall_Exploit {\n  strings:\n    $uri = \"/cgi-bin/sonicwall.cgi\"\n    $hex = { 55 89 E5 83 EC 18 }\n  condition:\n    $uri or $hex\n}"
+  },
+  {
+    "malware": "WannaCry",
+    "cve": "CVE-2017-0144",
+    "type": "Ransomware / Worm",
+    "cvss": "9.8",
+    "year": "2017",
+    "mitre": "T1210 - Exploitation of Remote Services",
+    "patch": "Install Microsoft Security Bulletin MS17-010; block TCP port 445 on external perimeter.",
+    "desc": "EternalBlue SMBv1 remote code execution exploit developed by NSA and weaponized globally by threat actors.",
+    "yara": "rule WannaCry_EternalBlue {\n  strings:\n    $ms17 = \"SMB_COM_TRANSACTION2\"\n    $wnry = \"WNcry@2ol7\"\n  condition:\n    all of them\n}"
+  },
+  {
+    "malware": "Stuxnet",
+    "cve": "CVE-2010-2568",
+    "type": "Rootkit / APT",
+    "cvss": "9.3",
+    "year": "2010",
+    "mitre": "T1091 - Replication Through Removable Media",
+    "patch": "Deploy Microsoft patch KB2286198; disable automatic shortcut icon extraction across Windows Explorer.",
+    "desc": "Windows Shell parsing flaw handling .LNK shortcut icons from USB drives without user execution.",
+    "yara": "rule Stuxnet_LNK_Exploit {\n  strings:\n    $magic = { 4C 00 00 00 01 14 02 00 }\n    $clsid = \"00021401-0000-0000-C000-000000000046\"\n  condition:\n    $magic at 0 and $clsid\n}"
+  },
+  {
+    "malware": "Morris Worm",
+    "cve": "CVE-1999-0518",
+    "type": "Worm",
+    "cvss": "7.5",
+    "year": "1988",
+    "mitre": "T1203 - Exploitation for Client Execution",
+    "patch": "Recompile fingerd daemon with bounds checking; disable finger utility across untrusted network nodes.",
+    "desc": "Exploited fingerd daemon buffer overflow across UNIX systems to self-replicate without credentials.",
+    "yara": "rule Morris_Fingerd_Overflow {\n  strings:\n    $shellcode = { 90 90 90 31 C0 50 68 2F 2F 73 68 }\n  condition:\n    $shellcode\n}"
+  },
+  {
+    "malware": "XZ Utils Backdoor",
+    "cve": "CVE-2024-3094",
+    "type": "Rootkit / Supply Chain",
+    "cvss": "10.0",
+    "year": "2024",
+    "mitre": "T1195 - Supply Chain Compromise",
+    "patch": "Downgrade xz-utils to version 5.6.0 or lower; audit upstream release tarballs for injection artifacts.",
+    "desc": "Supply chain backdoor inserted in liblzma upstream tarball modifying OpenSSH authentication.",
+    "yara": "rule XZ_Backdoor_Payload {\n  strings:\n    $b1 = { F3 0F 1E FA E8 ?? ?? ?? ?? 48 89 E5 }\n    $sig = \"_get_cpuid\"\n  condition:\n    all of them\n}"
+  },
+  {
+    "malware": "Log4Shell (Khonsari)",
+    "cve": "CVE-2021-44228",
+    "type": "Ransomware / Botnet",
+    "cvss": "10.0",
+    "year": "2021",
+    "mitre": "T1190 - Exploit Public-Facing Application",
+    "patch": "Upgrade Apache Log4j to 2.17.1+; set log4j2.formatMsgNoLookups=true in JVM args.",
+    "desc": "Log4Shell JNDI injection in Apache Log4j parsing logged strings resulting in unauthenticated RCE.",
+    "yara": "rule Log4j_JNDI_Exploit {\n  strings:\n    $jndi = /\\$\\{(jndi|base64):/i\n  condition:\n    $jndi\n}"
+  }
+]

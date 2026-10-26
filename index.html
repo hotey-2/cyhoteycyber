@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Malware Analysis & Exploit Intelligence Lab</title>
-    <title>created by bharat Sharma 24bcs10407</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
     body { background-color: #f1f5f9; color: #0f172a; padding: 20px; line-height: 1.5; }
@@ -568,17 +567,6 @@
         patch: "Deploy Microsoft patch KB2286198; disable auto .LNK parsing.",
         desc: "Windows Shell parsing flaw handling .LNK shortcut icons from USB drives.",
         yara: "rule Stuxnet_LNK_Exploit {\n  strings:\n    $magic = { 4C 00 00 00 01 14 02 00 }\n  condition:\n$magic at 0\n}"
-      },
-      {
-        malware: "vsftpd Backdoor RCE",
-        cve: "CVE-2011-2523",
-        type: "Backdoor / RCE",
-        cvss: "9.8",
-        year: "2011",
-        mitre: "T1195 - Supply Chain Compromise",
-        patch: "Upgrade to official vsftpd source release; verify cryptographic checksums.",
-        desc: "Remote Command Execution via Malicious Backdoor Modification in vsftpd 2.3.4 tarball.",
-        yara: "rule vsftpd_Backdoor_Exploit {\n  strings:\n    $smiley = \":)\"\n    $backdoor_port = \"6200\"\n  condition:\n    all of them\n}"
       },
       {
         malware: "XZ Utils Backdoor",

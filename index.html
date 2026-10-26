@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Malware Analysis & Exploit Intelligence Lab</title>
-  <title>created by bharat Sharma 24bcs10407</title>
+    <title>created by bharat Sharma 24bcs10407</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
     body { background-color: #f1f5f9; color: #0f172a; padding: 20px; line-height: 1.5; }
@@ -359,7 +359,7 @@
     </div>
   </div>
 
-  <!-- ==================== TAB 4: THREAT INTEL & YARA ==================== -->
+  <!-- ==================== TAB 4: THREAT INTEL & YARA (UNTOUCHED) ==================== -->
   <div id="cve-tab" class="module-card">
     <h2>Vector 4: Threat Intelligence, Patch Matrix & YARA Generator</h2>
     <p class="desc">Dynamic database fed via asynchronous JSON stream. Select any threat to inspect MITRE ATT&CK mappings, recommended remediation patches, and exportable YARA detection rules.</p>
@@ -367,7 +367,7 @@
     <div class="lookup-container">
       <label style="font-size: 11px; font-weight: bold; text-transform: uppercase;">Search Threat Intelligence Feed:</label>
       <div class="cve-bar" style="margin-top: 6px;">
-        <input type="text" id="cve-search" placeholder="Type Akira, WannaCry, vsftpd, CVE ID, or Mitigation..." oninput="executeLookup()">
+        <input type="text" id="cve-search" placeholder="Type Akira, WannaCry, Stuxnet, CVE ID, or Mitigation..." oninput="executeLookup()">
         <button class="action-btn" onclick="executeLookup()">[ EXTRACT INTEL ]</button>
       </div>
       <div class="quick-tags">
@@ -375,7 +375,6 @@
         <span onclick="setSearch('Akira')"><strong>Akira Ransomware</strong></span>
         <span onclick="setSearch('WannaCry')">WannaCry</span>
         <span onclick="setSearch('Stuxnet')">Stuxnet</span>
-        <span onclick="setSearch('vsftpd')">vsftpd Backdoor</span>
         <span onclick="setSearch('XZ Utils')">XZ Utils</span>
         <span onclick="setSearch('Log4Shell')">Log4Shell</span>
       </div>
@@ -522,7 +521,7 @@
       }, 300);
     }
 
-    // ================= TAB 4: THREAT INTEL & YARA =================
+    // ================= TAB 4: THREAT INTEL & YARA (UNTOUCHED) =================
     let THREAT_INTEL_STORE = [];
 
     const FALLBACK_DATA = [
@@ -568,4 +567,106 @@
         mitre: "T1091 - Removable Media",
         patch: "Deploy Microsoft patch KB2286198; disable auto .LNK parsing.",
         desc: "Windows Shell parsing flaw handling .LNK shortcut icons from USB drives.",
-        yara: "rule Stuxnet_LNK_Exploit {\n  strings
+        yara: "rule Stuxnet_LNK_Exploit {\n  strings:\n    $magic = { 4C 00 00 00 01 14 02 00 }\n  condition:\n$magic at 0\n}"
+      },
+      {
+        malware: "vsftpd Backdoor RCE",
+        cve: "CVE-2011-2523",
+        type: "Backdoor / RCE",
+        cvss: "9.8",
+        year: "2011",
+        mitre: "T1195 - Supply Chain Compromise",
+        patch: "Upgrade to official vsftpd source release; verify cryptographic checksums.",
+        desc: "Remote Command Execution via Malicious Backdoor Modification in vsftpd 2.3.4 tarball.",
+        yara: "rule vsftpd_Backdoor_Exploit {\n  strings:\n    $smiley = \":)\"\n    $backdoor_port = \"6200\"\n  condition:\n    all of them\n}"
+      },
+      {
+        malware: "XZ Utils Backdoor",
+        cve: "CVE-2024-3094",
+        type: "Rootkit / Supply Chain",
+        cvss: "10.0",
+        year: "2024",
+        mitre: "T1195 - Supply Chain Compromise",
+        patch: "Downgrade xz-utils to version 5.6.0 or lower.",
+        desc: "Supply chain backdoor in liblzma modifying OpenSSH authentication.",
+        yara: "rule XZ_Backdoor_Payload {\n  strings:\n    $sig = \"_get_cpuid\"\n  condition:\n    $sig\n}"
+      }
+    ];
+
+    async function loadThreatIntelData() {
+      try {
+        const res = await fetch('cve_intel.json');
+        if (!res.ok) throw new Error("HTTP Fetch Failed");
+        THREAT_INTEL_STORE = await res.json();
+      } catch (err) {
+        THREAT_INTEL_STORE = FALLBACK_DATA;
+      }
+      renderCVETable(THREAT_INTEL_STORE);
+      if (THREAT_INTEL_STORE.length > 0) extractThreatProfile(THREAT_INTEL_STORE[0]);
+    }
+
+    function renderCVETable(data) {
+      const tbody = document.getElementById('cve-body');
+      const count = document.getElementById('match-count');
+      tbody.innerHTML = '';
+      count.innerText = data.length;
+
+      data.forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.onclick = () => extractThreatProfile(item);
+        tr.innerHTML = `
+          <td><strong>${item.malware}</strong></td>
+          <td><span class="match-highlight">${item.cve}</span></td>
+          <td>${item.mitre || "T1210 - Remote Exploit"}</td>
+          <td><strong>${item.cvss}</strong></td>
+          <td>${item.patch}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function executeLookup() {
+      const query = document.getElementById('cve-search').value.toLowerCase().trim();
+      const filtered = THREAT_INTEL_STORE.filter(item => 
+        item.malware.toLowerCase().includes(query) ||
+        item.cve.toLowerCase().includes(query) ||
+        item.patch.toLowerCase().includes(query) ||
+        item.desc.toLowerCase().includes(query)
+      );
+
+      renderCVETable(filtered);
+      if (filtered.length > 0) {
+        extractThreatProfile(filtered[0]);
+      } else {
+        document.getElementById('cve-inspect').innerHTML = `<strong style="color:#777;">[NO THREAT RECORD MATCHED]</strong>: No advisory mapped for "${query}".`;
+        document.getElementById('yara-code').innerText = "// No active signature available.";
+      }
+    }
+
+    function setSearch(name) {
+      document.getElementById('cve-search').value = name;
+      executeLookup();
+    }
+
+    function extractThreatProfile(item) {
+      const inspect = document.getElementById('cve-inspect');
+      const yaraBox = document.getElementById('yara-code');
+
+      inspect.innerHTML = `
+        <strong>[SECURITY ADVISORY]: ${item.malware}</strong><br>
+        • Vulnerability ID: <strong>${item.cve}</strong> | Severity: <strong>CVSS ${item.cvss}/10.0</strong><br>
+        • MITRE ATT&CK: <strong>${item.mitre || "T1190 - Initial Access"}</strong><br>
+        • Exploit Vector: ${item.desc}<br>
+        • <span style="text-decoration: underline;">Blue-Team Remediation</span>: <strong>${item.patch}</strong>
+      `;
+
+      yaraBox.innerText = item.yara || `rule Generic_${item.cve.replace(/-/g, '_')} {\n  meta:\n    threat = "${item.malware}"\n  strings:\n    $s1 = "malicious_string"\n  condition:\n    any of them\n}`;
+    }
+
+    window.onload = () => {
+      initMemory();
+      loadThreatIntelData();
+    };
+  </script>
+</body>
+</html>

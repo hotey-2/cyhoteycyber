@@ -44,6 +44,17 @@
     "yara": "rule Stuxnet_LNK_Exploit {\n  strings:\n    $magic = { 4C 00 00 00 01 14 02 00 }\n    $clsid = \"00021401-0000-0000-C000-000000000046\"\n  condition:\n    $magic at 0 and $clsid\n}"
   },
   {
+    "malware": "vsftpd Backdoor RCE",
+    "cve": "CVE-2011-2523",
+    "type": "Trojan / Backdoor",
+    "cvss": "9.8",
+    "year": "2011",
+    "mitre": "T1195.002 - Compromise Software Supply Chain",
+    "patch": "Upgrade to vsftpd 2.3.5 or official source distribution; inspect binary hashes.",
+    "desc": "Malicious backdoor code inserted into vsftpd-2.3.4.tar.gz archive opening an unauthenticated root shell on TCP port 6200 when a username containing smiley :) is sent.",
+    "yara": "rule vsftpd_Backdoor_CVE_2011_2523 {\n  strings:\n    $smiley = \":)\"\n    $backdoor_port = { 62 00 }\n    $shell = \"/bin/sh\"\n  condition:\n    all of them\n}"
+  },
+  {
     "malware": "Morris Worm",
     "cve": "CVE-1999-0518",
     "type": "Worm",

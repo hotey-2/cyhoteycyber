@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Malware Interactive Learning Lab</title>
+<title>Malware Interactive Learning</title>
 <style>
 :root{--ink:#0f172a;--mut:#475569;--bg:#f1f5f9;--line:#cbd5e1;--acc:#0284c7;--bad:#ef4444}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif}
-body{background:var(--bg);color:var(--ink);padding:20px;line-height:1.5}
-.wrap{max-width:950px;margin:0 auto}
+body{background:var(--bg);color:var(--ink);padding:20px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+.wrap{max-width:950px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column}
 header{text-align:center;margin-bottom:18px;border-bottom:2px solid var(--line);padding-bottom:12px}
 h1{font-size:20px;text-transform:uppercase;font-family:'Courier New',monospace}
-.sub{font-size:12px;color:var(--mut)}
 .card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:16px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
 .step{font-size:11px;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:8px;font-family:monospace}
+.sub{font-size:12px;color:var(--mut)}
 /* category buttons + tree */
 #cats{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .btn{padding:8px 14px;background:#fff;border:1px solid #000;cursor:pointer;font-weight:700;font-size:12px}
@@ -31,8 +31,9 @@ h1{font-size:20px;text-transform:uppercase;font-family:'Courier New',monospace}
 #info h3{margin-bottom:4px}
 .tip{margin-top:8px;font-size:12px;color:#166534;background:#f0fdf4;border-left:3px solid #16a34a;padding:6px 8px}
 .go{background:var(--acc);color:#fff;border:0;padding:10px 16px;border-radius:4px;cursor:pointer;font-weight:700}
-/* virtual PC */
-#screen{height:380px;border:3px solid #1e293b;border-radius:6px;position:relative;overflow:hidden;
+/* virtual PC (fills the remaining page height) */
+#lab{flex:1;display:flex;flex-direction:column;margin-bottom:0}
+#screen{flex:1;min-height:380px;border:3px solid #1e293b;border-radius:6px;position:relative;overflow:hidden;
  background:url('1.jpeg') center/cover,linear-gradient(135deg,#0284c7,#1e3a8a)}
 #win{position:absolute;inset:20px 50px 50px;background:#fff;border:1px solid #475569;border-radius:6px;display:flex;flex-direction:column;box-shadow:0 10px 25px rgba(0,0,0,.5)}
 .wh{background:#f1f5f9;padding:6px 10px;display:flex;justify-content:space-between;font-size:12px;font-weight:700;border-bottom:1px solid var(--line)}
@@ -41,85 +42,104 @@ h1{font-size:20px;text-transform:uppercase;font-family:'Courier New',monospace}
 #wb input{padding:6px;border:1px solid #000;font-family:monospace;width:100%;margin:6px 0}
 #wb button{padding:4px 10px;cursor:pointer;margin:2px}
 .bar{position:absolute;bottom:0;left:0;right:0;height:36px;background:rgba(15,23,42,.9);color:#fff;font-size:11px;display:flex;justify-content:space-between;align-items:center;padding:0 12px}
-#toast{position:absolute;bottom:44px;right:10px;width:260px;background:#0f172a;color:#fff;border-left:4px solid var(--bad);padding:10px;font-size:11px;display:none;border-radius:4px}
+#toast{position:absolute;bottom:44px;right:10px;width:260px;background:#0f172a;color:#fff;border-left:4px solid var(--bad);padding:10px;font-size:11px;display:none;border-radius:4px;z-index:5}
 .cells{display:flex;gap:4px;margin:4px 0}
 .cell{flex:1;border:1px solid #777;text-align:center;padding:6px 0;font-family:monospace;font-weight:700}
 .cell.full{background:#e2e8f0}.cell.bad{background:#000;color:#fff}
 .file{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);padding:6px 10px;margin:4px 0;border-radius:4px}
 .hit{background:#fee2e2;border-color:var(--bad)}
 .bar2{height:12px;background:#e2e8f0;border-radius:3px;overflow:hidden}.bar2 div{height:100%;width:0;background:var(--acc);transition:width .3s}
-pre{background:#000;color:#00ff66;padding:8px;min-height:60px;white-space:pre-wrap}
+pre{background:#000;color:#00ff66;padding:8px;min-height:60px;white-space:pre-wrap;margin:6px 0}
+.lock{background:#000;color:#fff;padding:14px;margin-top:8px;text-align:center}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>Malware Interactive Learning Lab</h1>
-    <p class="sub">Learn what malware is — then see how it behaves on a safe, virtual PC. (Everything here is a simulation.)</p>
-  </header>
- 
-  <div class="card"><div class="step">Step 1 — Choose a malware</div><div id="cats"></div></div>
-  <div class="card" id="treeBox" style="display:none"><div class="step">Step 2 — Click a type</div><div id="tree"></div></div>
+  <header><h1>Malware Interactive Learning</h1></header>
+
+  <div class="card"><div class="step">Step 1 - Choose a malware</div><div id="cats"></div></div>
+  <div class="card" id="treeBox" style="display:none"><div class="step">Step 2 - Click a type</div><div id="tree"></div></div>
   <div class="card" id="infoBox" style="display:none"><div id="info"></div></div>
-  <div class="card" id="lab" style="display:none">
-    <div class="step">Virtual PC — practical</div>
+
+  <div class="card" id="lab">
+    <div class="step">Virtual PC</div>
     <div id="screen">
-      <div id="win"><div class="wh"><span id="wt"></span><button onclick="$('lab').style.display='none'">×</button></div><div id="wb"></div></div>
+      <div id="win"><div class="wh"><span id="wt"></span><button onclick="idle()">x</button></div><div id="wb"></div></div>
       <div id="toast"></div>
-      <div class="bar"><span>🪟 Start</span><span id="st"></span></div>
+      <div class="bar"><span>Start</span><span id="st"></span></div>
     </div>
   </div>
 </div>
- 
+
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[<>&"]/g, c => '&#' + c.charCodeAt(0) + ';');
 const status = t => $('st').textContent = t;
 const toast = t => { const e = $('toast'); e.textContent = t; e.style.display = 'block'; setTimeout(() => e.style.display = 'none', 3500); };
 const cells = (n, f) => Array.from({length: n}, (_, i) => `<span class="cell ${f(i) ? 'full' : ''}">${esc(f(i) || '00')}</span>`).join('');
- 
-/* ===== ADD NEW MALWARE HERE: just add an entry. demo = key from DEMOS (optional) ===== */
+const idle = () => { $('wt').textContent = 'Welcome'; $('wb').textContent = 'Choose a malware, pick a type, then click See Practical to run it here.'; status('Windows: ready'); };
+
+/* ===== ADD NEW MALWARE HERE: just add an entry. demo = key from DEMOS ===== */
 const DATA = {
-  Virus: {icon: '🦠', def: 'A virus is a harmful program that hides inside a normal file. It only spreads when a person runs the infected file.',
+  Virus: {def: 'A virus is a harmful program that hides inside a normal file. It only spreads when a person runs the infected file.',
     tip: "Don't run unknown files and keep antivirus updated.",
     types: {
       'File Infector': {def: 'Attaches itself to .exe files. When you run that file, the virus runs too and infects other files.', demo: 'infect'},
-      'Macro Virus': {def: 'Hides in Word/Excel macros. Opening the file and clicking "Enable Content" starts it.'},
-      'Boot Sector Virus': {def: 'Hides in the part of the disk that loads first, so it starts before Windows even starts.'}}},
-  Worm: {icon: '🪱', def: 'A worm spreads on its own through networks. Nobody has to click anything.',
+      'Macro Virus': {def: 'Hides in Word/Excel macros. Opening the file and clicking "Enable Content" starts it.', demo: 'macro'},
+      'Boot Sector Virus': {def: 'Hides in the part of the disk that loads first, so it starts before Windows even starts.', demo: 'boot'}}},
+  Worm: {def: 'A worm spreads on its own through networks. Nobody has to click anything.',
     tip: 'Install updates (MS17-010 stopped WannaCry), use a firewall, block port 445 from the internet.',
     types: {
       'Network Worm': {def: 'Finds a bug in a network service and sends special data to break in. WannaCry did this using SMB.', demo: 'overflow'},
       'Email Worm': {def: 'Arrives as an email attachment, then mails itself to everyone in your contacts.', demo: 'spread'}}},
-  Trojan: {icon: '🐴', def: 'A trojan pretends to be useful software (cracks, boosters) but secretly does harm. Like the Trojan Horse story.',
+  Trojan: {def: 'A trojan pretends to be useful software (cracks, boosters) but secretly does harm. Like the Trojan Horse story.',
     tip: 'Download only from official sites. Never use cracked software.',
     types: {
       'Fake Installer': {def: 'A fake "free" setup file that installs a hidden backdoor while you wait.', demo: 'trojan'},
-      'Backdoor Trojan': {def: 'Opens a secret door in your PC so the attacker can come in anytime.'},
-      'RAT': {def: 'Remote Access Trojan: attacker can see your screen, files and even webcam.'}}},
-  Ransomware: {icon: '🔒', def: 'Ransomware locks your files and demands money to give them back.',
+      'Backdoor Trojan': {def: 'Opens a secret door in your PC so the attacker can come in anytime.', demo: 'backdoor'},
+      'RAT': {def: 'Remote Access Trojan: attacker can see your screen, files and even webcam.', demo: 'rat'}}},
+  Ransomware: {def: 'Ransomware locks your files and demands money to give them back.',
     tip: 'Keep offline backups, install updates, never open unknown attachments.',
     types: {
       'Crypto Ransomware': {def: 'Encrypts your files. Without the secret key they cannot be opened.', demo: 'lock'},
-      'Locker Ransomware': {def: 'Locks the whole screen instead of encrypting files.'}}},
-  Spyware: {icon: '🕵️', def: 'Spyware secretly watches what you do and sends it to the attacker.',
+      'Locker Ransomware': {def: 'Locks the whole screen instead of encrypting files.', demo: 'locker'}}},
+  Spyware: {def: 'Spyware secretly watches what you do and sends it to the attacker.',
     tip: 'Use 2-factor login, a password manager and antivirus.',
     types: {
       'Keylogger': {def: 'Records every key you press, so passwords get stolen as you type them.', demo: 'keylog'},
-      'Adware': {def: 'Shows too many ads and tracks what you browse.'}}}
+      'Adware': {def: 'Shows too many ads and tracks what you browse.', demo: 'adware'}}}
 };
- 
+
 /* ===== PRACTICAL DEMOS (all fake / safe) ===== */
 const DEMOS = {
   infect() {
     const names = ['notes.txt', 'photo.jpg', 'report.doc', 'game_setup.exe'];
     $('wb').innerHTML = '<p>Open files. Which one is dangerous?</p>' + names.map((n, i) =>
-      `<div class="file" id="f${i}"><span>📄 ${n}</span><button onclick="open_(${i})">Open</button></div>`).join('');
+      `<div class="file" id="f${i}"><span>${n}</span><button onclick="open_(${i})">Open</button></div>`).join('');
     status('Antivirus: OFF');
     window.open_ = i => {
       if (i < 3) return toast(names[i] + ' opened. Normal file.');
-      names.forEach((_, j) => { $('f' + j).classList.add('hit'); $('f' + j).firstChild.textContent += ' 🦠'; });
+      names.forEach((_, j) => { $('f' + j).classList.add('hit'); $('f' + j).firstChild.textContent += ' [INFECTED]'; });
       toast('Virus ran and attached itself to ALL files!'); status('Files infected: 4');
+    };
+  },
+  macro() {
+    $('wb').innerHTML = `<div style="background:#fef9c3;border:1px solid #ca8a04;padding:8px;margin-bottom:8px">SECURITY WARNING: Macros have been disabled. <button id="go">Enable Content</button></div>
+      <b>Invoice_Oct.docx</b><p>Dear customer, please find the payment details below...</p><pre id="log"></pre>`;
+    status('Word: macros disabled');
+    $('go').onclick = () => { $('log').textContent = '> Macro started\n> cmd.exe launched\n> Downloading payload...\n> Payload installed'; toast('Macro ran a hidden command!'); status('Hidden process running'); };
+  },
+  boot() {
+    $('wb').innerHTML = '<button id="go">Restart PC</button><pre id="log"></pre>';
+    status('PC: on');
+    $('go').onclick = () => {
+      $('go').disabled = true; status('PC: restarting');
+      ['BIOS check ... OK', 'Reading boot sector ...', 'WARNING: boot sector modified', 'Virus code running BEFORE Windows', 'Windows starting (virus already in memory)']
+        .forEach((l, i) => setTimeout(() => {
+          $('log').textContent += l + '\n';
+          if (i == 3) toast('Antivirus cannot see this: it has not started yet');
+          if (i == 4) status('Boot sector infected');
+        }, 700 * (i + 1)));
     };
   },
   overflow() {
@@ -138,16 +158,16 @@ const DEMOS = {
   },
   spread() {
     const who = ['Amit', 'Riya', 'Boss', 'Mom', 'Friend'];
-    $('wb').innerHTML = `<div class="file"><span>📧 invoice.zip (from unknown)</span><button id="go">Open attachment</button></div>
-      <p>Your contacts:</p>` + who.map((w, i) => `<div class="file" id="c${i}">👤 ${w}</div>`).join('');
+    $('wb').innerHTML = `<div class="file"><span>invoice.zip (from unknown)</span><button id="go">Open attachment</button></div>
+      <p>Your contacts:</p>` + who.map((w, i) => `<div class="file" id="c${i}">${w}</div>`).join('');
     $('go').onclick = () => {
       toast('Worm started! Mailing itself to contacts...');
-      who.forEach((_, i) => setTimeout(() => { $('c' + i).classList.add('hit'); $('c' + i).textContent += ' ✉️ infected mail sent'; status(`Sent: ${i + 1}/${who.length}`); }, 700 * (i + 1)));
+      who.forEach((_, i) => setTimeout(() => { $('c' + i).classList.add('hit'); $('c' + i).textContent += ' - infected mail sent'; status(`Sent: ${i + 1}/${who.length}`); }, 700 * (i + 1)));
     };
   },
   trojan() {
     $('wb').innerHTML = `<p>Downloads folder:</p>` + ['SpeedBooster_v2.exe', 'GameCrack_Patch.exe'].map(n =>
-      `<div class="file"><span>⚡ ${n}</span><button onclick="install('${n}')">Run Setup</button></div>`).join('') +
+      `<div class="file"><span>${n}</span><button onclick="install('${n}')">Run Setup</button></div>`).join('') +
       `<p id="tl"></p><div class="bar2"><div id="pb"></div></div>`;
     status('Port 4444: closed');
     window.install = n => {
@@ -160,55 +180,93 @@ const DEMOS = {
       }, 300);
     };
   },
+  backdoor() {
+    $('wb').innerHTML = `<div class="file"><span>photo_editor_crack.exe</span><button id="go">Run</button></div>
+      <b>Attacker terminal</b><pre id="log">Waiting for victim...</pre><input id="cmd" placeholder="type: dir  or  whoami, then Enter" disabled>`;
+    status('Port 4444: closed');
+    $('go').onclick = () => { status('Port 4444: OPEN'); $('log').textContent = 'Victim connected on port 4444\n'; $('cmd').disabled = false; toast('Backdoor opened silently'); };
+    $('cmd').onkeydown = e => {
+      if (e.key !== 'Enter') return;
+      const c = $('cmd').value.trim();
+      $('log').textContent += '> ' + c + '\n' + ({dir: 'passwords.txt  bank.xlsx  photos', whoami: 'victim-pc\\user'}[c] || 'unknown command') + '\n';
+      $('cmd').value = '';
+    };
+  },
+  rat() {
+    $('wb').innerHTML = `<div class="file"><span>invoice.exe</span><button id="go">Run</button></div>
+      <b>Attacker panel</b>
+      <div id="pn" style="display:none"><button data-a="Screen: attacker sees your desktop live">View Screen</button><button data-a="Webcam: camera light ON, attacker is watching">Open Webcam</button><button data-a="Files: documents and passwords.txt copied to attacker">Steal Files</button></div>
+      <pre id="log">Waiting for victim...</pre>`;
+    $('go').onclick = () => { $('pn').style.display = 'block'; $('log').textContent = 'Victim connected'; toast('RAT installed silently'); status('Remote session active'); };
+    $('pn').onclick = e => { if (e.target.dataset.a) $('log').textContent += '\n> ' + e.target.dataset.a; };
+  },
   lock() {
-    $('wb').innerHTML = `<div class="file"><span>💾 Local Disk (C:)</span><button id="go">Open</button></div><div id="fl"></div>`;
+    $('wb').innerHTML = `<div class="file"><span>Local Disk (C:)</span><button id="go">Open</button></div><div id="fl"></div>`;
     status('Defender: normal');
     $('go').onclick = () => {
-      $('fl').innerHTML = ['thesis.docx', 'photos.zip', 'bank.xlsx'].map(f => `<div class="file hit">🔒 ${f}.locked</div>`).join('') +
-        `<div style="background:#000;color:#fff;padding:10px;margin-top:8px"><b style="color:#f87171">YOUR FILES ARE ENCRYPTED</b><br>Pay 0.5 BTC to wallet: [demo-wallet-address]<br>
+      $('fl').innerHTML = ['thesis.docx', 'photos.zip', 'bank.xlsx'].map(f => `<div class="file hit">${f}.locked</div>`).join('') +
+        `<div class="lock"><b style="color:#f87171">YOUR FILES ARE ENCRYPTED</b><br>Pay 0.5 BTC to wallet: [demo-wallet-address]<br>
         <button onclick="DEMOS.lock()">Restore (reset demo)</button></div>`;
       status('CRITICAL: files locked'); toast('Ransomware encrypted your files!');
     };
   },
+  locker() {
+    $('wb').innerHTML = '<button id="go">Restart PC</button><div id="ov"></div>';
+    status('PC: on');
+    $('go').onclick = () => {
+      $('ov').innerHTML = `<div class="lock"><b style="color:#f87171">THIS PC IS LOCKED</b><br>Pay 0.5 BTC to get the unlock code.
+        <input id="code" placeholder="unlock code"><button id="try">Unlock</button><p id="r"></p><button onclick="DEMOS.locker()">Reset demo</button></div>`;
+      status('PC locked'); toast('Locker ransomware blocked your screen');
+      $('try').onclick = () => $('r').textContent = 'Wrong code. Files are not encrypted, but the screen stays locked.';
+    };
+  },
   keylog() {
     $('wb').innerHTML = `<b>Fake bank login</b><input id="u" placeholder="username"><input id="p" placeholder="password">
-      <b>🕵️ Attacker's secret log:</b><pre id="log"></pre>`;
+      <b>Attacker's secret log:</b><pre id="log"></pre>`;
     status('Hidden process: keylogger.exe');
     ['u', 'p'].forEach(id => $(id).onkeydown = e => { $('log').textContent += `[${id === 'u' ? 'user' : 'pass'}] ${e.key}\n`; });
+  },
+  adware() {
+    $('wb').innerHTML = '<button id="go">Open free-movie site</button><div id="ads"></div>';
+    let n = 0;
+    const ad = () => {
+      status('Ads open: ' + ++n);
+      const d = document.createElement('div');
+      d.className = 'file hit';
+      d.innerHTML = '<span>YOU WON A PRIZE! Click here</span><button>x</button>';
+      d.querySelector('button').onclick = () => { d.remove(); n--; ad(); ad(); };
+      $('ads').appendChild(d);
+    };
+    $('go').onclick = () => { toast('Adware installed along with the site'); ad(); ad(); ad(); };
   }
 };
- 
+
 /* ===== UI: category -> tree -> definition -> practical ===== */
 const mark = (sel, el) => { document.querySelectorAll(sel).forEach(b => b.classList.remove('on')); el.classList.add('on'); };
- 
-$('cats').innerHTML = Object.entries(DATA).map(([k, d]) => `<button class="btn" onclick="pick('${k}',this)">${d.icon} ${k}</button>`).join('');
- 
+
+$('cats').innerHTML = Object.keys(DATA).map(k => `<button class="btn" onclick="pick('${k}',this)">${k}</button>`).join('');
+
 function pick(cat, btn) {
-  mark('#cats .btn', btn);
+  mark('#cats .btn', btn); idle();
   const d = DATA[cat];
-  $('lab').style.display = $('infoBox').style.display = 'none';
-  $('treeBox').style.display = 'block';
-  $('tree').innerHTML = `<div class="node root">${d.icon} ${cat}</div><div class="kids">` +
+  $('treeBox').style.display = $('infoBox').style.display = 'block';
+  $('tree').innerHTML = `<div class="node root">${cat}</div><div class="kids">` +
     Object.keys(d.types).map(t => `<div class="kid"><div class="arrow">↓</div><div class="node" onclick="show('${cat}','${t}',this)">${t}</div></div>`).join('') + '</div>';
-  $('infoBox').style.display = 'block';
-  $('info').innerHTML = `<div><h3>${d.icon} What is ${cat}?</h3><p>${d.def}</p><p class="tip">🛡️ Protection: ${d.tip}</p><p class="sub" style="margin-top:8px">Now click a type above ↑</p></div>`;
+  $('info').innerHTML = `<div><h3>What is ${cat}?</h3><p>${d.def}</p><p class="tip">Protection: ${d.tip}</p><p class="sub" style="margin-top:8px">Now click a type above.</p></div>`;
 }
- 
+
 function show(cat, type, el) {
-  mark('.node:not(.root)', el);
+  mark('.node:not(.root)', el); idle();
   const t = DATA[cat].types[type];
-  $('lab').style.display = 'none';
-  $('info').innerHTML = `<div><h3>${type}</h3><p>${t.def}</p><p class="tip">🛡️ Protection: ${DATA[cat].tip}</p></div>` +
-    (t.demo ? `<button class="go" onclick="startDemo('${cat}','${type}')">▶ See Practical</button>` : '<span class="sub">Practical coming soon</span>');
+  $('info').innerHTML = `<div><h3>${type}</h3><p>${t.def}</p><p class="tip">Protection: ${DATA[cat].tip}</p></div>
+    <button class="go" onclick="startDemo('${cat}','${type}')">See Practical</button>`;
 }
- 
+
 function startDemo(cat, type) {
-  $('lab').style.display = 'block';
-  $('wt').textContent = `${type} — live simulation`;
+  $('wt').textContent = `${type} - live simulation`;
   DEMOS[DATA[cat].types[type].demo]();
   $('lab').scrollIntoView({behavior: 'smooth'});
 }
 </script>
 </body>
 </html>
- 
